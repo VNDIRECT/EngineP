@@ -6,8 +6,10 @@ Created on Sun Aug 14 18:38:25 2016
 """
 import json
 from engineP import compute
+from portopt import markowitz
 from flask import Flask, request
 from crossdomain import crossdomain
+import time
 
 app = Flask(__name__)
 
@@ -29,13 +31,19 @@ def hello():
                 'error': e.message
             }), 500
 
+@app.route("/markowitz")
+@crossdomain(origin="*")
+def markowitz_endpoint():
+    try:
+        symbols = request.args.get('symbols').split(',')
+        return json.dumps(markowitz(symbols))
+    except Exception as e:
+        print('error', e)
+        return json.dumps({
+                'error': e.message
+            }), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
-
-
-
-
-
 
 
