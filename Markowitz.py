@@ -15,10 +15,13 @@ if __name__ == "__main__":
     app.run()
 
 
-import statistics
-from scipy.stats import norm
 import numpy as np
-import math
+import matplotlib.pyplot as plt
+import cvxopt as opt
+from cvxopt import blas, solvers
+import pandas as pd
+import mpld3
+from mpld3 import plugins
 #PRICE HISTORY INPUT
 vnindex = [655.7,660.2,648.3,637.3,629.5,627.4,631.9,631.6,636,648.4,652.2,657.1,656.1,648.6,649.3,649.9,659.6,660.3,667.8,673.5,664.6,666.7,675.1,658.9,652.3,658.7,661.1,649.5,650.9,648,640.3,632.3,630.1,622.2,621.3,620.8,632.3,626.4,628,626.5,619.2,625.1,627,625.4,623.6,629.8,631.3,627.9,624.6,620,621.9,623.4,619.9,618.4,614.5,608.1,604.3,611.9,611.6,611,614.8,619.2,622.5,624.8,615.8,610.8,612.1,614.1,605,603.9,606.5,601.5,599.1,598.4,591.7,594,598.5,591.6,592.5,575.7,568,568.3,579.9,579.5,578,579.8,579.3,572.3,571.6,567.8,560.3,555.8,558.4,561.2,569.9,568.3,575.7,572.1,570.7,574.7,570.9,572.3,575.8,579.3,577.1,574,578,577.3,575.9,571.7,574.7,576.2,573.6,570.4,570.2,561.6,559.4,566.1,562.8,568,561.3,560.7,554,552.5,547,548,543.8,544.8,542.1,539.1,536.5,540.6,545.2,539.5,542.7,537.7,542.4,522.2,521.9,529.4,535.8,526.4,543,553,560.4,564.3,557.9,560,565.4,574.6,569.9,574.4,579,579.5,576.3,569.9,567.7,566.2,564.3,566.4,566.9,568.2,577.1,572.5,568,562.2,563.4,561,565.2,574.1,563.6,571.6,574.4,574.4,570.4,573.2,582.9,590.4,595.7,593.8,600,604.5,601.9,603.3,605,609.2,611.3,605.6,603.5,605.3,610.7,612.4,615.2,610.6,611.7,602.8,607.4,605.2,596.2,598.4,598.6,601.7,595.1,590.2,590.5,594.6,593,592.4,590,590.8,592.1,588,586.8,579.6,581.3,570,562.3,563.5,562.6,561.2,564.9,570.4,570.2,572.7,573.2,572.1,566.2,562.5,564.1,563.3,562.2,566.7,572.1,572.3,566.7,554.9,556.8,554.3,562.3,564.8,570.9,555.8,545.9,530,526.9,556.3,566.7,577.8,580.2,573.1]
 vnm = [168,169,164,162,158,158,156,154,152,155,158,160,158,157,154,156,157,158,153,150,147,146,147,147,146,147,147,143,144,145,143,141,139,140,137,137,140,139,139,137,137,137,137,137,137,137,138,138,137,136,139,141,141,142,142,143,141,144,145,146,146,145,145,147,146,144,145,146,143,144,142,142,142,139,138,138,140,139,140,137,136,139,143,142,142,143,143,143,141,137,137,134,134,134,136,134,135,134,135,134,133,135,138,138,137,136,135,136,131,131,131,131,132,131,132,130,128,130,129,131,130,130,129,129,130,128,126,124,122,121,119,119,116,116,117,115,118,114,116,117,119,117,120,121,121,123,121,122,124,126,125,126,128,127,127,127,124,125,124,125,125,128,128,128,126,124,123,123,123,125,120,123,123,123,122,124,124,123,125,123,127,131,130,132,134,140,137,132,130,128,127,129,128,123,123,117,118,119,114,114,113,115,114,113,112,111,106,105,106,102,101,101,101,102,103,103,100,101,100,100,102,101,100,101,102,99,98.5,97.5,97.5,97.5,97.5,98.5,99.5,97.5,97,97,98.5,99,99.5,100,101,99.5,100,96,94.5,101,102,104,103,103]
@@ -33,82 +36,161 @@ amt_vnd = 200
 amt_ssi = 100
 amt_cash = 20000
 
-#PORTFOLIO VALUE HISTORY
-portfolio = []
-for i in range(0,len(vnm)):
-    portfolio_instance=vnm[i]*amt_vnm + hpg[i]*amt_hpg +vnd[i]*amt_vnd +ssi[i]*amt_ssi + amt_cash
-    portfolio.append(portfolio_instance)
 
-#GET WEIGHTT
-value_portfolio = amt_vnm*vnm[0] + amt_hpg*hpg[0] + amt_vnd*vnd[0] + amt_ssi*ssi[0] + amt_cash 
-weight_vnm = amt_vnm*vnm[0]/value_portfolio
-weight_hpg = amt_hpg*hpg[0]/value_portfolio
-weight_vnd = amt_vnd*vnd[0]/value_portfolio
-weight_ssi = amt_ssi*ssi[0]/value_portfolio
-weight_cash = amt_cash/value_portfolio
+# Turn off progress printing 
+solvers.options['show_progress'] = False
 
+## NUMBER OF ASSETS
+#n_assets = 4
 
-#GET RETURN
-def get_expectedreturn (returns):
-    period = math.ceil(len(returns)/12)
-    average_end = sum(returns [0:period]) /period
-    average_begin = sum(returns[len(returns)-period:len(returns)-1]) / period
-    return_s = (average_end - average_begin)/average_begin
-    return return_s
+## NUMBER OF OBSERVATIONS
+#n_obs = 1000  #original 1000
 
-return_portfolio = get_expectedreturn(vnm)*weight_vnm + get_expectedreturn(hpg)*weight_hpg + get_expectedreturn(vnd)*weight_vnd + get_expectedreturn(ssi)*weight_ssi  
+#results in a n_assets x n_obs vector, with a return for each asset in each observed period
+#return_vec = np.random.randn(n_assets, n_obs) 
+return_vec = np.row_stack((vnm, hpg, vnd, ssi))
 
-#GET PERFORMANCE
-def get_performance (price_history):
-    performance = []
-    for i in range(0,len(price_history)-2):
-        instance = (price_history[i]/price_history[i+1])-1
-        performance.append(instance)
-    return performance
+## Additional code demonstrating the formation of a Markowitz Bullet from random portfolios:
+
+def rand_weights(n):
+    ''' Produces n random weights that sum to 1 '''
+    k = np.random.rand(n)
+    return k / sum(k)
 
 
-#GET VALUE AT RISK
+def random_portfolio(returns):
+    ''' 
+    Returns the mean and standard deviation of returns for a random portfolio
+    '''
 
-def get_var(portfolio_performance):
-    mean_portfolio = sum(portfolio_performance) / float(len(portfolio_performance))
-    std_portfolio = statistics.stdev(portfolio_performance)
-    confidence_level = 0.95
-    min_return =  norm.ppf(1-confidence_level,mean_portfolio,std_portfolio)
-    position_var = value_portfolio *(min_return+1)
-    var_portfolio = value_portfolio - position_var
-    return var_portfolio
-
-var_portfolio = get_var(get_performance(portfolio))
-
-#GET BETA
-def get_beta(x):
-    return np.cov(get_performance(vnindex),get_performance(x))[1][0]/np.var(get_performance(vnindex))
-
-beta_portfolio = get_beta(vnm)*weight_vnm + get_beta(hpg)*weight_hpg + get_beta(vnd)*weight_vnd + get_beta(ssi)*weight_ssi
-
-
-#GET MAXIMUM DRAW DOWN
-def get_maxdd (x):
-    highest = [0]     
-    for i in range (0,len(x)):
-        max_num = max(x[len(x)-1-i],highest[0])
-        highest.insert(0,max_num)
-    dd = [0]
+    p = np.asmatrix(np.mean(returns, axis=1))
+    w = np.asmatrix(rand_weights(returns.shape[0]))
+    C = np.asmatrix(np.cov(returns))
     
-    for i in range (0,len(x)):
-        if x[len(x)-1-i] == highest[i]:
-            dd.insert(0,0)
-        else: dd.insert(0,max(dd[i],highest[i]-x[len(x)-1-i]))
-
-    return max(dd)
+    mu = w * p.T
+    sigma = np.sqrt(w * C * w.T)
     
-maxdd_portfolio = get_maxdd(portfolio)  
+    # This recursion reduces outliers to keep plots pretty
+    if sigma > 2:
+        return random_portfolio(returns)
+    return mu, sigma
 
 
-return_portfolio
-var_portfolio
-beta_portfolio
-maxdd_portfolio
+def convert_portfolios(portfolios):
+    ''' Takes in a cvxopt matrix of portfolios, returns list '''
+    port_list = []
+    for portfolio in portfolios:
+        temp = np.array(portfolio).T
+        port_list.append(temp[0].tolist())
+        
+    return port_list
+
+
+def optimal_portfolio(returns):
+    ''' returns an optimal portfolio given a matrix of returns '''
+    n = len(returns)
+    #print n  # n=4, number of assets
+    returns = np.asmatrix(returns)
+    
+    N = 100
+    mus = [10**(5.0 * t/N - 1.0) for t in range(N)]
+    
+    # Convert to cvxopt matrices
+    S = opt.matrix(np.cov(returns))  #S is the covariance matrix. diagonal is the variance of each stock
+
+    
+    pbar = opt.matrix(np.mean(returns, axis=1))
+    print ("pbar:", pbar)
+
+    # Create constraint matrices
+    G = -opt.matrix(np.eye(n))   # negative n x n identity matrix
+    h = opt.matrix(0.0, (n ,1))
+    A = opt.matrix(1.0, (1, n))
+    b = opt.matrix(1.0)
+    
+    # Calculate efficient frontier weights using quadratic programming
+    portfolios = [solvers.qp(mu*S, -pbar, G, h, A, b)['x'] 
+                  for mu in mus]
+
+    port_list = convert_portfolios(portfolios)
+ 
+   
+    ## CALCULATE RISKS AND RETURNS FOR FRONTIER
+    returns = [blas.dot(pbar, x) for x in portfolios]  #Different than input returns
+    risks = [np.sqrt(blas.dot(x, S*x)) for x in portfolios] #np.sqrt returns the stdev, not variance
+    
+    ## CALCULATE THE 2ND DEGREE POLYNOMIAL OF THE FRONTIER CURVE
+    m1 = np.polyfit(returns, risks, 2)
+    #print m1 # result: [ 159.38531535   -3.32476303    0.4910851 ]
+    x1 = np.sqrt(m1[2] / m1[0])
+    # CALCULATE THE OPTIMAL PORTFOLIO
+    wt = solvers.qp(opt.matrix(x1 * S), -pbar, G, h, A, b)['x'] #Is this the tangency portfolio? X1 = slope from origin?  
+    print ("wt, optimal portfolio:", wt)
+    return np.asarray(wt), returns, risks, port_list
+
+
+
+def covmean_portfolio(covariances, mean_returns):
+    ''' returns an optimal portfolio given a covariance matrix and matrix of mean returns '''
+    n = len(mean_returns)
+    
+    N = 100
+    mus = [10**(5.0 * t/N - 1.0) for t in range(N)]
+
+    S = opt.matrix(covariances)  # how to convert array to matrix?  
+
+    pbar = opt.matrix(mean_returns)  # how to convert array to matrix?
+
+    # Create constraint matrices
+    G = -opt.matrix(np.eye(n))   # negative n x n identity matrix
+    h = opt.matrix(0.0, (n ,1))
+    A = opt.matrix(1.0, (1, n))
+    b = opt.matrix(1.0)
+    
+    # Calculate efficient frontier weights using quadratic programming
+    portfolios = [solvers.qp(mu*S, -pbar, G, h, A, b)['x'] 
+                  for mu in mus]
+    port_list = convert_portfolios(portfolios)
+    
+    ## CALCULATE RISKS AND RETURNS FOR FRONTIER
+    frontier_returns = [blas.dot(pbar, x) for x in portfolios]  
+    risks = [np.sqrt(blas.dot(x, S*x)) for x in portfolios] 
+    
+    ## CALCULATE THE 2ND DEGREE POLYNOMIAL OF THE FRONTIER CURVE
+    m1 = np.polyfit(frontier_returns, risks, 2)
+    #print m1 # result: [ 159.38531535   -3.32476303    0.4910851 ]
+    x1 = np.sqrt(m1[2] / m1[0])
+    # CALCULATE THE OPTIMAL PORTFOLIO
+    wt = solvers.qp(opt.matrix(x1 * S), -pbar, G, h, A, b)['x']  
+
+    return np.asarray(wt), frontier_returns, risks, port_list
+
+
+## Example Input from Estimates
+
+covariances = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]] # inner lists represent columns, diagonal is variance
+ 
+
+mean_returns = [1.5,3.0,5.0,2.5] # Returns in DALYs
+
+weights, returns, risks, portfolios = covmean_portfolio(covariances, mean_returns)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
