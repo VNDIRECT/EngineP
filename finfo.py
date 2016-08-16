@@ -95,5 +95,6 @@ class PriceStash():
                 max_length = len(res[symbol])
         for symbol in symbols:
             res[symbol] = res[symbol][:max_length]
+        res['VNINDEX'] = self.get('VNINDEX')[:max_length]
         return res
 
