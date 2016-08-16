@@ -9,25 +9,28 @@ from engineP import compute
 from flask import Flask, request
 from crossdomain import crossdomain
 
-
-
-
 app = Flask(__name__)
 
 @app.route("/")
 @crossdomain(origin="*")
 def hello():
-    symbols = request.args.get('symbols').split(',')
-    quantities = map(int, request.args.get('quantities').split(','))
-    if len(symbols) != len(quantities):
+    try:
+        symbols = request.args.get('symbols').split(',')
+        quantities = map(int, request.args.get('quantities').split(','))
+        cash = int(request.args.get('cash')) or 0
+        if len(symbols) != len(quantities):
+            raise 'symbols and quantities must be of the same length'
+        myP = {k: v for k,v in zip(symbols, quantities)}
+        return json.dumps(compute(myP, cash))
+    except Exception as e:
+        print('error', e)
         return json.dumps({
-                error: 'symbols and quantities must be of the same length'
-            })
-    myP = {k: v for k,v in zip(symbols, quantities)}
-    return json.dumps(compute(myP))
+                'error': e.message
+            }), 500
+
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host='0.0.0.0')
 
 
 
