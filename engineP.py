@@ -65,7 +65,7 @@ def compute():
         portfolio.append(portfolio_instance)
 
     #GET WEIGHTT
-    value_portfolio = amt_vnm*vnm[0] + amt_hpg*hpg[0] + amt_vnd*vnd[0] + amt_ssi*ssi[0] + amt_cash
+    value_portfolio = sum([myP[symbol] * price.get(symbol)[0] for symbol in myP.keys()]) + amt_cash
     weight_vnm = amt_vnm*vnm[0]/value_portfolio
     weight_hpg = amt_hpg*hpg[0]/value_portfolio
     weight_vnd = amt_vnd*vnd[0]/value_portfolio
@@ -112,10 +112,9 @@ def compute():
 
     #GET BETA
     def get_beta(x):
-        return np.cov(get_performance(vnindex),get_performance(x))[1][0]/np.var(get_performance(vnindex))
+        return np.cov(get_performance(price.get('VNINDEX')),get_performance(x))[1][0]/np.var(get_performance(price.get('VNINDEX')))
 
-    beta_portfolio = get_beta(vnm)*weight_vnm + get_beta(hpg)*weight_hpg + get_beta(vnd)*weight_vnd + get_beta(ssi)*weight_ssi
-
+    beta_portfolio = sum([get_beta(price.get(symbol)) * weight_P.get(symbol) for symbol in myP.keys()])
 
     #GET MAXIMUM DRAW DOWN
     def get_maxdd (x):
