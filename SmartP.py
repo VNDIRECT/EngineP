@@ -17,7 +17,8 @@ def hello():
     try:
         symbols = request.args.get('symbols').split(',')
         quantities = map(int, request.args.get('quantities').split(','))
-        cash = int(request.args.get('cash')) or 0
+        cash_param = request.args.get('cash')
+        cash = int(cash_param) if cash_param is not None else 0
         if len(symbols) != len(quantities):
             raise 'symbols and quantities must be of the same length'
         myP = {k: v for k,v in zip(symbols, quantities)}
