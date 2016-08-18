@@ -1,6 +1,7 @@
 import requests
 import os
 import pickle
+from time import sleep
 
 class FileCache():
     """
@@ -37,6 +38,7 @@ class FinfoAPI():
         url = self.URL.format(symbol)
         data = requests.get(url).json()
         res = list(reversed(data['c']))
+        sleep(0.1)  # avoid maximum retries exceeded
         return {
             'close': res
         }
@@ -68,9 +70,18 @@ class PriceStash():
         """
         print('Loading symbol list')
         symbols = self.finfo_api.retrieve_symbol_list()
+        symbols.append('VNINDEX')
         for s in symbols:
             print('Loading symbol', s)
-            self.cache.store(s, self.get(s))
+            self.cache.store(s, self.fetch(s))
+
+    def fetch(self, symbol):
+        """
+        Similar to get, but does not care about the cache
+        """
+        res = self.finfo_api.retrieve(symbol)
+        self.cache.store(symbol, res['close'])
+        return res['close']
 
     def get(self, symbol):
         """
@@ -78,9 +89,7 @@ class PriceStash():
         """
         if self.cache.get(symbol):
             return self.cache.get(symbol)
-        res = self.finfo_api.retrieve(symbol)
-        self.cache.store(symbol, res['close'])
-        return res['close']
+        return self.fetch(symbol)
 
     def build_stash(self, symbols):
         """
@@ -98,3 +107,9 @@ class PriceStash():
         res['VNINDEX'] = self.get('VNINDEX')[:max_length]
         return res
 
+if __name__ == '__main__':
+    """
+    Run directly will
+    """
+    price_stash = PriceStash()
+    price_stash.full_refetch()
