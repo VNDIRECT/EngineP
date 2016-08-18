@@ -10,7 +10,8 @@ import numpy as np
 
 price_stash = finfo.PriceStash()
 
-def markowitz(symbols):
+
+def _markowitz(symbols):
     """
     I can optimize any list of symbol as long as there is a price
     """
@@ -29,3 +30,19 @@ def markowitz(symbols):
 
     weights = pfopt.markowitz_portfolio(cov_mat, avg_rets, target_ret)
     return {symbol: weights[symbol] for symbol in symbols}
+
+def markowitz(portfolio, cash):
+    """
+    Calculate the optimized quantity
+    """
+    symbols = portfolio.keys()
+    price = price_stash.build_stash(symbols)
+    weights = _markowitz(symbols)
+    nav = sum([price.get(symbol)[0] * portfolio.get(symbol) for symbol in symbols]) + cash
+    qty_weights = {
+            symbol: {
+            'quantity': int(nav * weights.get(symbol) / price.get(symbol)[0]),
+            'ratio': weights.get(symbol)
+            }
+        for symbol in symbols}
+    return qty_weights
