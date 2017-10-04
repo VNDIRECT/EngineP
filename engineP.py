@@ -42,8 +42,11 @@ def compute(myP, cash=0):
     def get_performance (price_history):
         performance = []
         for i in range(0,len(price_history)-2):
-            instance = (price_history[i]/price_history[i+1])-1
-            performance.append(instance)
+            if price_history[i+1] > 0:
+                instance = (price_history[i]/price_history[i+1])-1
+                performance.append(instance)
+            else:
+                performance.append(0)
         return performance
 
 

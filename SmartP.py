@@ -29,20 +29,20 @@ def parse_portfolio(request):
 @app.route("/")
 @crossdomain(origin="*")
 def hello():
-    try:
-        portfolio, cash = parse_portfolio(request)
-        return json.dumps(compute(portfolio, cash))
-    except Exception as e:
-        raise CommonError(e.message)
+    # try:
+    portfolio, cash = parse_portfolio(request)
+    return json.dumps(compute(portfolio, cash))
+    # except Exception as e:
+    #     raise CommonError(e.message)
 
 @app.route("/markowitz")
 @crossdomain(origin="*")
 def markowitz_endpoint():
-    try:
-        portfolio, cash = parse_portfolio(request)
-        return json.dumps(markowitz(portfolio, cash))
-    except Exception as e:
-        raise CommonError(e.message)
+    # try:
+    portfolio, cash = parse_portfolio(request)
+    return json.dumps(markowitz(portfolio, cash))
+    # except Exception as e:
+    #     raise CommonError(e.message)
 
 ## Currently not working, should fork another process instead
 # @app.route("/refresh")
@@ -58,11 +58,11 @@ def markowitz_endpoint():
 #     except Exception as e:
 #         raise CommonError('Error while refresh: {}'.format(e.message))
 
-@app.errorhandler(CommonError)
-def handle_error(error):
-    response = jsonify(error.to_dict())
-    response.status_code = error.status_code
-    return response
+# @app.errorhandler(CommonError)
+# def handle_error(error):
+#     response = jsonify(error.to_dict())
+#     response.status_code = error.status_code
+#     return response
 
 @app.route("/error")
 @crossdomain(origin="*")
@@ -70,6 +70,6 @@ def error_endpoint():
     raise CommonError('This endpoint has an error')
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', threaded=True)
+    app.run(host='0.0.0.0', threaded=True, debug=True)
 
 
